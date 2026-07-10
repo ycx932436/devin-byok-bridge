@@ -57,7 +57,7 @@
 
 ## 安全漏洞
 
-请通过 [GitHub Security Advisories](https://github.com/ycx932436/devin-byok-bridge/security/advisories/new) 私下报告，不要公开利用细节。
+请通过 [GitHub Security Advisories](https://github.com/gogoing1024/devin-byok-bridge/security/advisories/new) 私下报告，不要公开利用细节。
 
 以下通常**不在**本仓库受理范围内（见 SECURITY.md）：
 

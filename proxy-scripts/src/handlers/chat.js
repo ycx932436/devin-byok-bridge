@@ -243,17 +243,21 @@ function resolveSlotThinkingEffort(arg0, arg1) {
   }
   return arg1.openaiReasoningEffort || "";
 }
-function buildThinkingOptions(arg0, arg1, tmp2 = null) {
+export function buildThinkingOptions(arg0, arg1, tmp2 = null) {
   const tmp3 = getRuntimeConfig();
   const tmp4 = isThinkingModel(arg0);
   const tmp5 = resolveSlotThinkingEffort(tmp2, tmp3);
   const tmp6 = isClaudeModel(arg0);
   const tmp7 = isGeminiModel(arg0);
   const tmp8 = isOpenAIModel(arg0);
+  const tmpOff = tmp5 === "off";
   const tmp12 = tmp2 === 1 || tmp2 === 2 ? getSlotReasoningMode(tmp2) : tmp3.openaiReasoningMode || "";
   let tmp9 = false;
   let tmp10 = "";
-  if (arg1 || tmp8) {
+  if (tmpOff) {
+    tmp9 = false;
+    tmp10 = "";
+  } else if (arg1 || tmp8) {
     tmp9 = tmp4 || tmp3.openaiThinkingEnabled === true || !!tmp5 || !!tmp12;
     tmp10 = tmp9 ? tmp5 || tmp3.openaiReasoningEffort || "" : "";
   } else if (tmp7) {
@@ -269,10 +273,12 @@ function buildThinkingOptions(arg0, arg1, tmp2 = null) {
   const tmp11 = {
     thinkingEnabled: tmp9,
     reasoningEffort: tmp10,
-    reasoningMode: tmp12,
     thinkingBudget: tmp9 ? (tmp7 ? usesGeminiThinkingLevel(arg0) ? 0 : thinkingEffortToGeminiBudget(tmp10) : thinkingEffortToAnthropicBudget(tmp10)) || (tmp7 ? 8192 : 10000) : 0,
     provider: tmp7 ? "gemini" : tmp8 || arg1 ? "gpt" : tmp6 ? "claude" : detectModelProvider(arg0) || "claude"
   };
+  if (tmp8 || arg1) {
+    tmp11.reasoningMode = tmp12;
+  }
   return tmp11;
 }
 export function handleGetChatMessage(arg0, arg1, arg2) {

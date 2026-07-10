@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 
 import { sanitizeAnthropicMessages, parseGetChatMessageRequest } from "../proxy-scripts/src/handlers/parse-request.js";
 import { applySystemPromptOverride, clearSystemPromptCache } from "../proxy-scripts/src/handlers/system-prompt.js";
-import { shouldFallbackToChatCompletions, toChatCompletionsMessages, buildOpenAIResponsesBody, buildOpenAIChatCompletionsBody, requiresConfiguredDefaultModel, toInjectedTailMessage, splitSseFrames, filterForwardedTools, sanitizeLogBody } from "../proxy-scripts/src/handlers/chat.js";
+import { shouldFallbackToChatCompletions, toChatCompletionsMessages, buildOpenAIResponsesBody, buildOpenAIChatCompletionsBody, requiresConfiguredDefaultModel, toInjectedTailMessage, splitSseFrames, filterForwardedTools, sanitizeLogBody, buildThinkingOptions } from "../proxy-scripts/src/handlers/chat.js";
 import { setRuntimeConfig, getSlotServiceTier, getSlotReasoningMode, handleConfigRequest } from "../proxy-scripts/src/handlers/models.js";
 import { applyAnthropicPromptCache, normalizeOpenAIPromptCacheMode, prepareToolsForPromptCache, shouldRetryWithoutPromptCache, sortToolsForStablePrefix } from "../proxy-scripts/src/handlers/prompt-cache.js";
 import { computeCacheHitRate, extractOpenAIResponsesUsage, formatUsageLog, mergeUsage } from "../proxy-scripts/src/handlers/usage-log.js";
@@ -24,6 +24,7 @@ const require = createRequire(import.meta.url);
 const { readClaudeUserConfig, readCodexUserConfig } = require("../externalConfigImporter.js");
 const { PatchManager } = require("../patchManager.js");
 const gatewayUrl = require("../gatewayUrl.js");
+const { buildThinkingEffortOptionsHtml, sanitizeThinkingEffort } = require("../thinkingEffort.js");
 const proxyRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "proxy-scripts");
 
 function httpJsonRequest(port, method, reqPath, body = null, timeoutMs = 3000) {
@@ -571,6 +572,56 @@ test("Claude 4 regional aliases use adaptive thinking", () => {
   assert.equal(payload.output_config.effort, "medium");
 });
 
+test("thinking effort options distinguish default from explicit off", () => {
+  const html = buildThinkingEffortOptionsHtml("claude-opus-4-8", "off");
+
+  assert.equal(sanitizeThinkingEffort("off"), "off");
+  assert.match(html, /<option value="">默认 · 按模型\/槽位决定<\/option>/);
+  assert.match(html, /<option value="off" selected>关闭 · 不启用思考<\/option>/);
+});
+
+test("BYOK #2 Claude defaults an unset thinking effort to medium", () => {
+  setRuntimeConfig({
+    BYOK2_MODEL: "claude-opus-4-8",
+    BYOK2_THINKING_EFFORT: ""
+  });
+
+  assert.deepEqual(buildThinkingOptions("claude-opus-4-8", false, 2), {
+    thinkingEnabled: true,
+    reasoningEffort: "medium",
+    thinkingBudget: 10000,
+    provider: "claude"
+  });
+});
+
+test("BYOK #2 Claude respects an explicit off thinking effort", () => {
+  setRuntimeConfig({
+    BYOK2_MODEL: "claude-opus-4-8",
+    BYOK2_THINKING_EFFORT: "off"
+  });
+
+  assert.deepEqual(buildThinkingOptions("claude-opus-4-8", false, 2), {
+    thinkingEnabled: false,
+    reasoningEffort: "",
+    thinkingBudget: 0,
+    provider: "claude"
+  });
+});
+
+test("BYOK #2 Claude enables thinking when an effort is configured", () => {
+  setRuntimeConfig({
+    BYOK2_MODEL: "claude-opus-4-8",
+    BYOK2_THINKING_EFFORT: "high"
+  });
+
+  assert.deepEqual(buildThinkingOptions("claude-opus-4-8", false, 2), {
+    thinkingEnabled: true,
+    reasoningEffort: "high",
+    thinkingBudget: 20000,
+    provider: "claude"
+  });
+});
+
 test("gateway capability cache uses detailed keys and can be cleared", () => {
   _setGatewayCapabilityCachePathForTests("");
   clearGatewayCapabilityCache();
@@ -633,6 +684,20 @@ test("gateway URL inference preserves explicit protocol and infers local HTTP", 
   assert.equal(gatewayUrl.shouldUseHttpGateway("api.example.com:8080"), true);
 });
 
+test("provider base URL parsing preserves the user input and derives runtime host/path", () => {
+  assert.deepEqual(gatewayUrl.parseProviderBaseUrl("https://modelservice.jdcloud.com/v1", "/messages"), {
+    input: "https://modelservice.jdcloud.com/v1",
+    host: "modelservice.jdcloud.com",
+    apiPath: "/v1/messages"
+  });
+
+  assert.deepEqual(gatewayUrl.parseProviderBaseUrl("https://modelservice.jdcloud.com/anthropic", "/responses"), {
+    input: "https://modelservice.jdcloud.com/anthropic",
+    host: "modelservice.jdcloud.com",
+    apiPath: "/anthropic/responses"
+  });
+});
+
 test("bufferedResponseHeaders strips transfer encoding and stale content length", () => {
   const headers = bufferedResponseHeaders({
     "content-type": "application/proto",
@@ -655,7 +720,7 @@ test("external config importer reads Claude and Codex user config files", () => 
   fs.mkdirSync(path.join(home, ".codex"));
   fs.writeFileSync(path.join(home, ".claude", "settings.json"), JSON.stringify({
     env: {
-      ANTHROPIC_BASE_URL: "https://claude.example.com",
+      ANTHROPIC_BASE_URL: "https://claude.example.com/anthropic",
       ANTHROPIC_AUTH_TOKEN: "sk-claude",
       ANTHROPIC_DEFAULT_OPUS_MODEL: "claude-opus-4-8"
     }
@@ -675,10 +740,12 @@ test("external config importer reads Claude and Codex user config files", () => 
   const codex = readCodexUserConfig(home);
 
   assert.equal(claude.ok, true);
-  assert.equal(claude.host, "claude.example.com");
+  assert.equal(claude.host, "claude.example.com/anthropic");
+  assert.equal(claude.baseUrl, "https://claude.example.com/anthropic");
   assert.equal(claude.model, "claude-opus-4-8");
   assert.equal(codex.ok, true);
   assert.equal(codex.host, "openai.example.com/v1");
+  assert.equal(codex.baseUrl, "https://openai.example.com/v1");
   assert.equal(codex.model, "gpt-5.5");
 });
 

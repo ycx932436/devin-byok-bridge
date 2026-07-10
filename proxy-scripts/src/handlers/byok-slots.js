@@ -46,7 +46,7 @@ export const SLOT_CONFIG_FIELDS = [
   "THINKING_EFFORT"
 ];
 
-export const THINKING_EFFORT_LEVELS = ["", "low", "medium", "high", "xhigh", "max"];
+export const THINKING_EFFORT_LEVELS = ["", "off", "low", "medium", "high", "xhigh", "max"];
 export const GEMINI_THINKING_LEVELS = ["", "minimal", "low", "medium", "high"];
 
 export function sanitizeThinkingEffort(value) {

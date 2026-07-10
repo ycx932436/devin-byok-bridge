@@ -3,6 +3,7 @@
   let tmp1 = "";
   const tmp2 = new Map();
   let tmp3 = tmp0.getState() || {};
+  const modelPickerCore = globalThis.ModelPickerCore || null;
   const fn = () => ({
     1: {
       options: Array.isArray(tmp3.cachedModelOptions1) ? tmp3.cachedModelOptions1 : [],
@@ -90,20 +91,21 @@
   function fn9(arg0, arg1) {
     const tmp22 = fn2(arg1);
     const tmp32 = fn();
+    const tmp4 = fn4("cfgByok" + tmp22 + "Model");
+    const tmp5 = (tmp4 && tmp4.value || tmp32[tmp22].selected || "").trim();
     tmp32[tmp22].options = [];
-    tmp32[tmp22].selected = "";
+    tmp32[tmp22].selected = tmp5;
     tmp32[tmp22].apiKey = "";
     tmp3["cachedModelOptions" + tmp22] = [];
-    tmp3["lastSelectedModel" + tmp22] = "";
+    tmp3["lastSelectedModel" + tmp22] = tmp5;
     tmp3["cachedModelApiKey" + tmp22] = "";
-    const tmp4 = fn4("cfgByok" + tmp22 + "Model");
     if (tmp4) {
-      fn25(tmp4, [], "");
+      fn25(tmp4, [], tmp5);
     }
-    const tmp5 = fn4("modelFetchStatus" + tmp22);
-    if (tmp5) {
-      tmp5.textContent = arg0 || "";
-      tmp5.style.color = "#fbbf24";
+    const tmp6 = fn4("modelFetchStatus" + tmp22);
+    if (tmp6) {
+      tmp6.textContent = arg0 || "";
+      tmp6.style.color = "#fbbf24";
     }
     fn3(tmp22);
     fn20();
@@ -168,10 +170,10 @@
     return null;
   }
   const tmp20 = {
-    claude: [["", "关闭 · 不启用思考"], ["low", "低 · budget 5k / adaptive"], ["medium", "中 · 推荐平衡"], ["high", "高 · 复杂分析/代码"], ["xhigh", "极高 · Opus 4.7/4.8"], ["max", "Max · Claude 最深思考"]],
-    gpt: [["", "关闭 · 不启用 reasoning"], ["low", "低 · reasoning.effort=low"], ["medium", "中 · reasoning.effort=medium"], ["high", "高 · reasoning.effort=high"], ["xhigh", "极高 · reasoning.effort=xhigh"]],
+    claude: [["", "默认 · 按模型/槽位决定"], ["off", "关闭 · 不启用思考"], ["low", "低 · budget 5k / adaptive"], ["medium", "中 · 推荐平衡"], ["high", "高 · 复杂分析/代码"], ["xhigh", "极高 · Opus 4.7/4.8"], ["max", "Max · Claude 最深思考"]],
+    gpt: [["", "默认 · 不覆盖 reasoning"], ["off", "关闭 · 不启用 reasoning"], ["low", "低 · reasoning.effort=low"], ["medium", "中 · reasoning.effort=medium"], ["high", "高 · reasoning.effort=high"], ["xhigh", "极高 · reasoning.effort=xhigh"]],
     gpt56: [["", "关闭 · 不启用 reasoning"], ["low", "低 · reasoning.effort=low"], ["medium", "中 · reasoning.effort=medium"], ["high", "高 · reasoning.effort=high"], ["xhigh", "极高 · reasoning.effort=xhigh"], ["max", "Max · GPT-5.6 最深推理"]],
-    gemini: [["", "默认 · medium（API 默认，不覆盖）"], ["minimal", "Minimal · 最低思考 / 最低延迟"], ["low", "Low · 速度优先"], ["medium", "Medium · 推荐平衡"], ["high", "High · 最深推理"]]
+    gemini: [["", "默认 · 按模型/槽位决定"], ["off", "关闭 · 不启用 thinking"], ["minimal", "Minimal · 最低思考 / 最低延迟"], ["low", "Low · 速度优先"], ["medium", "Medium · 推荐平衡"], ["high", "High · 最深推理"]]
   };
   const tmp21 = new Set(["cfgByok1Host", "cfgByok1Key", "cfgByok1Model", "cfgByok1ThinkingEffort", "cfgByok1ReasoningMode", "cfgByok1ServiceTier", "cfgByok2Host", "cfgByok2Key", "cfgByok2Model", "cfgByok2ThinkingEffort", "cfgByok2ReasoningMode", "cfgByok2ServiceTier", "cfgHybridPort", "cfgInferencePort", "cfgAnthropicPath", "cfgOpenaiPath", "cfgMaxTokens", "cfgCompletionTimeoutMs", "cfgSysPromptOverride", "cfgSysPromptPath"]);
   let tmp22 = null;
@@ -267,6 +269,7 @@
     const tmp9 = tmp12 ? tmp20.gpt56 : tmp20[tmp7] || tmp20.claude;
     tmp5.innerHTML = tmp9.map(([tmp02, tmp12]) => "<option value=\"" + tmp02 + "\"" + (tmp8 === tmp02 ? " selected" : "") + ">" + tmp12 + "</option>").join("");
     tmp5.value = tmp8;
+    fn40e(tmp5);
   }
   function fn20() {
     [1, 2].forEach(arg0 => {
@@ -297,7 +300,7 @@
   function fn23(arg0, arg1) {
     const tmp22 = fn2(arg1);
     const tmp32 = "BYOK" + tmp22 + "_";
-    const tmp4 = arg0[tmp32 + "ANTHROPIC_API_HOST"] || (tmp22 === 1 ? arg0.ANTHROPIC_API_HOST || "" : "");
+    const tmp4 = arg0[tmp32 + "BASE_URL"] || arg0[tmp32 + "ANTHROPIC_API_HOST"] || (tmp22 === 1 ? arg0.BASE_URL || arg0.ANTHROPIC_API_HOST || "" : "");
     const tmp5 = arg0[tmp32 + "ANTHROPIC_API_KEY"] || (tmp22 === 1 ? arg0.ANTHROPIC_API_KEY || "" : "");
     const tmp6 = arg0[tmp32 + "MODEL"] || (tmp22 === 1 ? arg0.DEFAULT_MODEL || "" : "");
     fn13("cfgByok" + tmp22 + "Host", tmp4);
@@ -353,6 +356,7 @@
       fn8(fn4("proxyRunBadge"), !!arg1.running, arg1.running ? "运行中" : "已停止");
     }
     fn20();
+    fn40h();
   }
   function fn24a() {
     const tmp12 = fn4("cfgAnthropicPath");
@@ -364,11 +368,9 @@
     tmp32.className = "guide-block";
     tmp32.style.marginBottom = "10px";
     tmp32.innerHTML = "<div class=\"card-head between\" style=\"margin-bottom:6px;padding:0\"><span class=\"toggle-section collapsed\" data-ws-toggle=\"advancedRouteBody\">高级路由</span><span class=\"badge badge-warn\">可选</span></div><div id=\"advancedRouteBody\" class=\"hidden\"><div class=\"fg\"><label>Anthropic API Path</label></div><div class=\"fg\"><label>OpenAI API Path</label></div><div class=\"guide-note\">GPT 默认先走 <code>/v1/responses</code>；网关不支持时会回退 <code>/v1/chat/completions</code>。如网关明确只支持旧接口，可在这里直接填写。</div></div>";
-    const tmp4 = fn4("cfgMaxTokens");
-    const tmp5 = tmp4 && tmp4.parentElement && tmp4.parentElement.parentElement;
-    const tmp6 = tmp5 && tmp5.parentElement || tmp22.parentElement;
-    if (tmp6 && tmp5) {
-      tmp6.insertBefore(tmp32, tmp5);
+    const tmp6 = fn4("tab-config");
+    if (tmp6) {
+      tmp6.appendChild(tmp32);
     } else {
       tmp22.insertAdjacentElement("afterend", tmp32);
     }
@@ -410,6 +412,7 @@
       if (tmp32 && arg0.value !== tmp32) {
         arg0.value = tmp32;
       }
+      fn25g(arg0);
       return;
     }
     arg0.innerHTML = "";
@@ -419,6 +422,7 @@
       tmp02.textContent = tmp32 ? tmp32 : "请先加载模型列表";
       tmp02.selected = true;
       arg0.appendChild(tmp02);
+      fn25g(arg0);
       return;
     }
     for (const tmp02 of tmp6) {
@@ -433,6 +437,352 @@
     if (tmp32) {
       arg0.value = tmp32;
     }
+    fn25g(arg0);
+  }
+  function fn25a(arg0) {
+    return !!(arg0 && /^cfgByok[12]Model$/.test(arg0.id || ""));
+  }
+  function fn25b(arg0) {
+    const tmp12 = String(arg0 || "").replace(/^cfgByok/, "").replace(/Model$/, "");
+    return fn2(Number(tmp12 || "1"));
+  }
+  function fn25c(arg0) {
+    if (!fn25a(arg0)) {
+      return null;
+    }
+    let tmp12 = arg0.nextElementSibling;
+    if (tmp12 && tmp12.classList && tmp12.classList.contains("model-picker")) {
+      return tmp12;
+    }
+    const tmp22 = fn25b(arg0);
+    const tmp32 = document.createElement("div");
+    tmp32.className = "model-picker";
+    tmp32.setAttribute("data-model-picker-slot", String(tmp22));
+    tmp32.innerHTML = "<button type=\"button\" class=\"model-picker-trigger\" aria-haspopup=\"listbox\" aria-expanded=\"false\"><span class=\"model-picker-main\"><span class=\"model-picker-value model-picker-placeholder\">请选择模型</span><span class=\"model-picker-provider\"></span></span><span class=\"model-picker-chevron\">⌄</span></button><div class=\"model-picker-panel hidden\"><div class=\"model-picker-search-wrap\"><input type=\"text\" class=\"model-picker-search\" placeholder=\"搜索或输入自定义模型\"><button type=\"button\" class=\"model-picker-clear\" aria-label=\"清空搜索\">×</button></div><div class=\"model-picker-list\" role=\"listbox\"></div></div>";
+    arg0.insertAdjacentElement("afterend", tmp32);
+    const tmp4 = tmp32.querySelector(".model-picker-trigger");
+    const tmp5 = tmp32.querySelector(".model-picker-search");
+    const tmp6 = tmp32.querySelector(".model-picker-clear");
+    const tmp7 = tmp32.querySelector(".model-picker-list");
+    tmp4?.addEventListener("click", () => fn25d(arg0, true));
+    tmp5?.addEventListener("input", () => fn25h(arg0, tmp5.value));
+    tmp5?.addEventListener("keydown", arg1 => {
+      if (arg1.key === "Escape") {
+        fn25e(tmp32);
+        tmp4?.focus();
+        return;
+      }
+      if (arg1.key !== "Enter") {
+        return;
+      }
+      const tmp02 = tmp7?.querySelector(".model-picker-option");
+      if (tmp02) {
+        fn25i(arg0, tmp02.getAttribute("data-model-value") || "");
+        arg1.preventDefault();
+      }
+    });
+    tmp6?.addEventListener("click", () => {
+      if (!tmp5) {
+        return;
+      }
+      tmp5.value = "";
+      fn25h(arg0, "");
+      tmp5.focus();
+    });
+    tmp7?.addEventListener("click", arg1 => {
+      const tmp02 = arg1.target && arg1.target.closest ? arg1.target.closest(".model-picker-option") : null;
+      if (!tmp02) {
+        return;
+      }
+      fn25i(arg0, tmp02.getAttribute("data-model-value") || "");
+    });
+    return tmp32;
+  }
+  function fn25d(arg0, arg1) {
+    const tmp12 = fn25c(arg0);
+    if (!tmp12) {
+      return;
+    }
+    document.querySelectorAll(".model-picker.open").forEach(arg02 => {
+      if (arg02 !== tmp12) {
+        fn25e(arg02);
+      }
+    });
+    const tmp22 = tmp12.classList.contains("open");
+    const tmp32 = arg1 ? !tmp22 : true;
+    tmp12.classList.toggle("open", tmp32);
+    tmp12.querySelector(".model-picker-panel")?.classList.toggle("hidden", !tmp32);
+    tmp12.querySelector(".model-picker-trigger")?.setAttribute("aria-expanded", tmp32 ? "true" : "false");
+    if (tmp32) {
+      const tmp4 = tmp12.querySelector(".model-picker-search");
+      if (tmp4) {
+        tmp4.value = "";
+      }
+      fn25h(arg0, "");
+      setTimeout(() => tmp4?.focus(), 0);
+    }
+  }
+  function fn25e(arg0) {
+    if (!arg0) {
+      return;
+    }
+    arg0.classList.remove("open");
+    arg0.querySelector(".model-picker-panel")?.classList.add("hidden");
+    arg0.querySelector(".model-picker-trigger")?.setAttribute("aria-expanded", "false");
+  }
+  function fn25f(arg0, arg1, arg2) {
+    if (modelPickerCore && typeof modelPickerCore.buildModelPickerItems === "function") {
+      return modelPickerCore.buildModelPickerItems(arg0, arg1, arg2);
+    }
+    const tmp12 = String(arg2 || "").trim().toLowerCase();
+    const tmp22 = fn25j(arg0, arg1);
+    const tmp32 = tmp12 ? tmp22.filter(arg02 => arg02.value.toLowerCase().includes(tmp12) || arg02.label.toLowerCase().includes(tmp12) || arg02.provider.toLowerCase().includes(tmp12)) : tmp22;
+    const tmp4 = String(arg2 || "").trim();
+    const tmp5 = tmp4 && tmp22.some(arg02 => arg02.value.toLowerCase() === tmp4.toLowerCase());
+    return {
+      items: tmp32,
+      customValue: tmp5 ? "" : tmp4,
+      showCustom: !!tmp4 && !tmp5
+    };
+  }
+  function fn25g(arg0) {
+    const tmp12 = fn25c(arg0);
+    if (!tmp12) {
+      return;
+    }
+    const tmp22 = arg0.value || "";
+    const tmp32 = tmp12.querySelector(".model-picker-value");
+    const tmp4 = tmp12.querySelector(".model-picker-provider");
+    if (tmp32) {
+      tmp32.textContent = tmp22 || "请选择模型";
+      tmp32.classList.toggle("model-picker-placeholder", !tmp22);
+    }
+    if (tmp4) {
+      const tmp5 = fn15(tmp22);
+      tmp4.textContent = tmp5 || "";
+      tmp4.classList.toggle("visible", !!tmp5);
+    }
+    const tmp5 = tmp12.querySelector(".model-picker-search");
+    fn25h(arg0, tmp5 && tmp12.classList.contains("open") ? tmp5.value : "");
+  }
+  function fn25h(arg0, arg1) {
+    const tmp12 = fn25c(arg0);
+    const tmp22 = tmp12 && tmp12.querySelector(".model-picker-list");
+    if (!tmp22) {
+      return;
+    }
+    tmp22.innerHTML = "";
+    const tmp32 = Array.from(arg0.options || []).map(arg02 => ({
+      id: arg02.value,
+      name: arg02.textContent || arg02.value
+    }));
+    const tmp4 = fn25f(tmp32, arg0.value || "", arg1 || "");
+    if (tmp4.showCustom) {
+      tmp22.appendChild(fn25k("使用自定义： " + tmp4.customValue, tmp4.customValue, "custom"));
+    }
+    for (const tmp5 of tmp4.items) {
+      const tmp6 = fn25k(tmp5.label || tmp5.value, tmp5.value, tmp5.provider || "");
+      tmp6.classList.toggle("active", tmp5.value === arg0.value);
+      tmp22.appendChild(tmp6);
+    }
+    if (!tmp4.items.length && !tmp4.showCustom) {
+      const tmp5 = document.createElement("div");
+      tmp5.className = "model-picker-empty";
+      tmp5.textContent = "请先加载模型，或直接输入自定义模型名";
+      tmp22.appendChild(tmp5);
+    }
+  }
+  function fn25i(arg0, arg1) {
+    const tmp12 = String(arg1 || "").trim();
+    if (!tmp12) {
+      return;
+    }
+    const tmp22 = Array.from(arg0.options || []).some(arg02 => arg02.value === tmp12);
+    if (!tmp22) {
+      const tmp32 = document.createElement("option");
+      tmp32.value = tmp12;
+      tmp32.textContent = tmp12;
+      arg0.insertBefore(tmp32, arg0.firstChild);
+    }
+    arg0.value = tmp12;
+    const tmp4 = fn25b(arg0);
+    tmp3["lastSelectedModel" + tmp4] = tmp12;
+    fn3(tmp4);
+    fn25g(arg0);
+    fn25e(arg0.nextElementSibling);
+    arg0.dispatchEvent(new Event("change", {
+      bubbles: true
+    }));
+  }
+  function fn25j(arg0, arg1) {
+    if (modelPickerCore && typeof modelPickerCore.dedupeOptions === "function") {
+      return modelPickerCore.dedupeOptions(arg0, arg1);
+    }
+    const tmp12 = [];
+    const tmp22 = new Set();
+    const tmp32 = String(arg1 || "").trim();
+    if (tmp32) {
+      tmp22.add(tmp32);
+      tmp12.push({
+        value: tmp32,
+        label: tmp32,
+        provider: fn15(tmp32) || ""
+      });
+    }
+    for (const tmp4 of arg0 || []) {
+      const tmp5 = fn21(tmp4);
+      if (!tmp5 || tmp22.has(tmp5)) {
+        continue;
+      }
+      tmp22.add(tmp5);
+      tmp12.push({
+        value: tmp5,
+        label: fn22(tmp4) || tmp5,
+        provider: fn15(tmp5) || ""
+      });
+    }
+    return tmp12;
+  }
+  function fn25k(arg0, arg1, arg2) {
+    const tmp12 = document.createElement("button");
+    tmp12.type = "button";
+    tmp12.className = "model-picker-option" + (arg2 === "custom" ? " custom" : "");
+    tmp12.setAttribute("data-model-value", arg1);
+    const tmp22 = document.createElement("span");
+    tmp22.className = "model-picker-option-name";
+    tmp22.textContent = arg0;
+    const tmp32 = document.createElement("span");
+    tmp32.className = "model-picker-option-provider";
+    tmp32.textContent = arg2 && arg2 !== "custom" ? arg2 : "";
+    tmp12.appendChild(tmp22);
+    tmp12.appendChild(tmp32);
+    return tmp12;
+  }
+  function fn25l() {
+    [1, 2].forEach(arg0 => {
+      const tmp12 = fn4("cfgByok" + arg0 + "Model");
+      if (tmp12) {
+        fn25g(tmp12);
+      }
+    });
+  }
+  const tmp40a = new Set(["cfgByok1ThinkingEffort", "cfgByok1ReasoningMode", "cfgByok1ServiceTier", "cfgByok2ThinkingEffort", "cfgByok2ReasoningMode", "cfgByok2ServiceTier"]);
+  function fn40a(arg0) {
+    return !!(arg0 && arg0.id && tmp40a.has(arg0.id));
+  }
+  function fn40b(arg0) {
+    if (!fn40a(arg0)) {
+      return null;
+    }
+    let tmp12 = arg0.nextElementSibling;
+    if (tmp12 && tmp12.classList && tmp12.classList.contains("choice-picker")) {
+      return tmp12;
+    }
+    const tmp22 = document.createElement("div");
+    tmp22.className = "choice-picker";
+    tmp22.innerHTML = "<button type=\"button\" class=\"choice-picker-trigger\" aria-haspopup=\"listbox\" aria-expanded=\"false\"><span class=\"choice-picker-value\"></span><span class=\"choice-picker-chevron\">⌄</span></button><div class=\"choice-picker-panel hidden\" role=\"listbox\"></div>";
+    arg0.insertAdjacentElement("afterend", tmp22);
+    const tmp32 = tmp22.querySelector(".choice-picker-trigger");
+    const tmp4 = tmp22.querySelector(".choice-picker-panel");
+    tmp32?.addEventListener("click", () => fn40c(arg0, true));
+    tmp4?.addEventListener("click", arg1 => {
+      const tmp02 = arg1.target && arg1.target.closest ? arg1.target.closest(".choice-picker-option") : null;
+      if (!tmp02) {
+        return;
+      }
+      fn40f(arg0, tmp02.getAttribute("data-choice-value") || "");
+    });
+    return tmp22;
+  }
+  function fn40c(arg0, arg1) {
+    const tmp12 = fn40b(arg0);
+    if (!tmp12) {
+      return;
+    }
+    document.querySelectorAll(".choice-picker.open").forEach(arg02 => {
+      if (arg02 !== tmp12) {
+        fn40d(arg02);
+      }
+    });
+    document.querySelectorAll(".model-picker.open").forEach(fn25e);
+    const tmp22 = tmp12.classList.contains("open");
+    const tmp32 = arg1 ? !tmp22 : true;
+    tmp12.classList.toggle("open", tmp32);
+    tmp12.querySelector(".choice-picker-panel")?.classList.toggle("hidden", !tmp32);
+    tmp12.querySelector(".choice-picker-trigger")?.setAttribute("aria-expanded", tmp32 ? "true" : "false");
+    if (tmp32) {
+      fn40e(arg0);
+    }
+  }
+  function fn40d(arg0) {
+    if (!arg0) {
+      return;
+    }
+    arg0.classList.remove("open");
+    arg0.querySelector(".choice-picker-panel")?.classList.add("hidden");
+    arg0.querySelector(".choice-picker-trigger")?.setAttribute("aria-expanded", "false");
+  }
+  function fn40e(arg0) {
+    const tmp12 = fn40b(arg0);
+    if (!tmp12) {
+      return;
+    }
+    const tmp22 = Array.from(arg0.options || []).map(arg02 => ({
+      value: arg02.value,
+      label: arg02.textContent || arg02.value
+    }));
+    const tmp32 = modelPickerCore && typeof modelPickerCore.buildChoicePickerItems === "function" ? modelPickerCore.buildChoicePickerItems(tmp22, arg0.value || "") : tmp22.map(arg02 => ({
+      value: arg02.value,
+      label: arg02.label,
+      selected: arg02.value === (arg0.value || "")
+    }));
+    const tmp4 = tmp12.querySelector(".choice-picker-value");
+    const tmp5 = tmp32.find(arg02 => arg02.selected) || tmp32[0] || {
+      label: "请选择",
+      value: ""
+    };
+    if (tmp4) {
+      tmp4.textContent = tmp5.label || "请选择";
+    }
+    const tmp6 = tmp12.querySelector(".choice-picker-panel");
+    if (!tmp6) {
+      return;
+    }
+    tmp6.innerHTML = "";
+    for (const tmp7 of tmp32) {
+      tmp6.appendChild(fn40g(tmp7));
+    }
+  }
+  function fn40f(arg0, arg1) {
+    arg0.value = String(arg1 == null ? "" : arg1);
+    fn40e(arg0);
+    fn40d(arg0.nextElementSibling);
+    arg0.dispatchEvent(new Event("change", {
+      bubbles: true
+    }));
+  }
+  function fn40g(arg0) {
+    const tmp12 = document.createElement("button");
+    tmp12.type = "button";
+    tmp12.className = "choice-picker-option" + (arg0.selected ? " active" : "");
+    tmp12.setAttribute("data-choice-value", arg0.value);
+    const tmp22 = document.createElement("span");
+    tmp22.className = "choice-picker-check";
+    tmp22.textContent = arg0.selected ? "✓" : "";
+    const tmp32 = document.createElement("span");
+    tmp32.className = "choice-picker-option-label";
+    tmp32.textContent = arg0.label || "请选择";
+    tmp12.appendChild(tmp22);
+    tmp12.appendChild(tmp32);
+    return tmp12;
+  }
+  function fn40h() {
+    for (const tmp12 of tmp40a) {
+      const tmp22 = fn4(tmp12);
+      if (tmp22) {
+        fn40e(tmp22);
+      }
+    }
   }
   function fn26(arg0) {
     const tmp12 = fn2(arg0);
@@ -442,6 +792,7 @@
     const tmp5 = (tmp4 || {}).value || "";
     const tmp6 = "BYOK" + tmp12 + "_";
     return {
+      [tmp6 + "BASE_URL"]: tmp32,
       [tmp6 + "ANTHROPIC_API_HOST"]: tmp32,
       [tmp6 + "ANTHROPIC_API_KEY"]: tmp22,
       [tmp6 + "ANTHROPIC_API_PATH"]: (fn4("cfgAnthropicPath") || {}).value || "",
@@ -457,6 +808,7 @@
   function fn27() {
     const tmp02 = fn26(1);
     const tmp12 = fn26(2);
+    const tmp22 = tmp02.BYOK1_THINKING_EFFORT === "off" ? "" : tmp02.BYOK1_THINKING_EFFORT || "";
     return {
       ...tmp02,
       ...tmp12,
@@ -473,8 +825,8 @@
       COMPLETION_TIMEOUT_MS: (fn4("cfgCompletionTimeoutMs") || {}).value || "12000",
       HYBRID_PORT: (fn4("cfgHybridPort") || {}).value || "3006",
       INFERENCE_PORT: (fn4("cfgInferencePort") || {}).value || "3001",
-      OPENAI_REASONING_EFFORT: tmp02.BYOK1_THINKING_EFFORT || "",
-      OPENAI_THINKING_ENABLED: tmp02.BYOK1_THINKING_EFFORT ? "true" : "",
+      OPENAI_REASONING_EFFORT: tmp22,
+      OPENAI_THINKING_ENABLED: tmp22 ? "true" : "",
       SYSTEM_PROMPT_OVERRIDE: (fn4("cfgSysPromptOverride") || {}).value === "true" ? "true" : "false",
       SYSTEM_PROMPT_PATH: (fn4("cfgSysPromptPath") || {}).value || ""
     };
@@ -533,6 +885,27 @@
     }
     return fn29(tmp22);
   }
+  function fn30a(arg0) {
+    if (modelPickerCore && typeof modelPickerCore.buildModelFetchUiState === "function") {
+      return modelPickerCore.buildModelFetchUiState(arg0);
+    }
+    const tmp12 = Math.max(0, Number(arg0 && arg0.count) || 0);
+    const tmp22 = String(arg0 && arg0.slot || "").trim();
+    if (arg0 && arg0.error || tmp12 === 0) {
+      return {
+        statusText: "未获取到模型列表，可直接输入自定义模型名",
+        statusColor: "#fbbf24",
+        actionState: null,
+        actionMessage: ""
+      };
+    }
+    return {
+      statusText: "已加载 " + tmp12 + " 个模型",
+      statusColor: "#34d399",
+      actionState: "success",
+      actionMessage: "BYOK #" + tmp22 + " 已加载 " + tmp12 + " 个模型"
+    };
+  }
   function fn31(arg0) {
     const tmp12 = fn2(arg0);
     const tmp22 = fn4("cfgByok" + tmp12 + "Model");
@@ -571,13 +944,18 @@
       tmp3["lastSelectedModel" + tmp32] = tmp9;
     }
     if (arg1) {
+      const tmp10 = fn30a({
+        error: arg1,
+        count: 0,
+        slot: tmp32
+      });
       fn25(tmp4, tmp8 ? tmp7[tmp32].options : [], tmp9);
       fn3(tmp32);
       if (tmp5) {
-        tmp5.textContent = "加载失败：" + arg1;
-        tmp5.style.color = "#f87171";
+        tmp5.textContent = tmp10.statusText;
+        tmp5.style.color = tmp10.statusColor;
       }
-      fn7("config", "error", "BYOK #" + tmp32 + " 加载模型失败：" + arg1);
+      fn7("config", tmp10.actionState, tmp10.actionMessage);
       return;
     }
     tmp7[tmp32].options = fn30(arg0);
@@ -587,11 +965,16 @@
     fn25(tmp4, tmp7[tmp32].options, tmp9);
     fn3(tmp32);
     const tmp10 = tmp7[tmp32].options.length;
+    const tmp11 = fn30a({
+      error: "",
+      count: tmp10,
+      slot: tmp32
+    });
     if (tmp5) {
-      tmp5.textContent = tmp10 ? "已加载 " + tmp10 + " 个模型" : "未获取到模型列表，请检查 API Key 或网关";
-      tmp5.style.color = tmp10 ? "#34d399" : "#fbbf24";
+      tmp5.textContent = tmp11.statusText;
+      tmp5.style.color = tmp11.statusColor;
     }
-    fn7("config", tmp10 ? "success" : "error", tmp10 ? "BYOK #" + tmp32 + " 已加载 " + tmp10 + " 个模型" : "BYOK #" + tmp32 + " 未获取到模型列表");
+    fn7("config", tmp11.actionState, tmp11.actionMessage);
     fn20();
   }
   function fn33(arg0) {
@@ -707,6 +1090,14 @@
   }
   function tmp43() {}
   document.addEventListener("click", arg0 => {
+    const modelPicker = arg0.target && arg0.target.closest ? arg0.target.closest(".model-picker") : null;
+    if (!modelPicker) {
+      document.querySelectorAll(".model-picker.open").forEach(fn25e);
+    }
+    const choicePicker = arg0.target && arg0.target.closest ? arg0.target.closest(".choice-picker") : null;
+    if (!choicePicker) {
+      document.querySelectorAll(".choice-picker.open").forEach(fn40d);
+    }
     const tabBtn = arg0.target && arg0.target.closest ? arg0.target.closest(".tab-btn") : null;
     if (tabBtn) {
       const tabId = tabBtn.getAttribute("data-tab");
@@ -858,6 +1249,7 @@
           fn3(tmp02);
         }
         fn20();
+        fn40h();
       } else if (tmp12.id === "cfgByok1Host" || tmp12.id === "cfgByok2Host") {
         fn9("Base URL 已修改，请重新加载模型", tmp12.id === "cfgByok2Host" ? 2 : 1);
       } else if (tmp12.id === "cfgByok1Key" || tmp12.id === "cfgByok2Key") {
@@ -892,8 +1284,9 @@
       }
     } else if (tmp12.type === "externalConfigImported") {
       const tmp02 = fn2(tmp12.slot);
-      if (tmp12.host) {
-        fn13("cfgByok" + tmp02 + "Host", tmp12.host);
+      const tmp03 = tmp12.baseUrl || tmp12.host || "";
+      if (tmp03) {
+        fn13("cfgByok" + tmp02 + "Host", tmp03);
       }
       if (tmp12.apiKey) {
         fn13("cfgByok" + tmp02 + "Key", tmp12.apiKey);
@@ -940,6 +1333,8 @@
     }
   });
   fn24a();
+  fn25l();
+  fn40h();
   fn37();
   fn5("getStatus");
   [1, 2].forEach(arg0 => {

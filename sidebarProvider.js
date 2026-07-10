@@ -552,30 +552,21 @@ class SidebarProvider {
     const tmp2 = tmp1;
     for (const tmp03 of ["", "BYOK1_", "BYOK2_"]) {
       for (const tmp04 of ["ANTHROPIC_API_HOST", "OPENAI_API_HOST"]) {
-        const tmp05 = String(tmp2[tmp03 + tmp04] || "").trim();
-        if (!tmp05) {
+        const tmp05 = tmp03 ? tmp03 + "BASE_URL" : "BASE_URL";
+        const tmp06 = String(tmp2[tmp05] || "").trim();
+        const tmp07 = String(tmp2[tmp03 + tmp04] || "").trim();
+        const tmp08 = tmp06 || tmp07;
+        if (!tmp08) {
           continue;
         }
-        const tmp12 = /^https?:\/\//i.test(tmp05) ? tmp05 : "https://" + tmp05;
-        let tmp22;
-        try {
-          tmp22 = new URL(tmp12);
-        } catch {
-          tmp2[tmp03 + tmp04] = stripProtoServer(tmp05);
-          continue;
+        const tmp12 = parseProviderBaseUrl(tmp08, tmp04 === "ANTHROPIC_API_HOST" ? "/messages" : "/responses");
+        tmp2[tmp03 + tmp04] = tmp12.host || stripProtoServer(tmp08);
+        if (tmp03 && !tmp06 && tmp07 && tmp07 !== tmp2[tmp03 + tmp04]) {
+          tmp2[tmp05] = tmp12.input || tmp07;
         }
-        const tmp3 = tmp22.pathname.replace(/\/+$/, "");
-        tmp2[tmp03 + tmp04] = tmp22.host;
-        if (tmp3 && tmp3 !== "/") {
-          const tmp06 = tmp03 + (tmp04 === "ANTHROPIC_API_HOST" ? "ANTHROPIC_API_PATH" : "OPENAI_API_PATH");
-          if (!tmp2[tmp06] || tmp2[tmp06] === "/v1/messages" || tmp2[tmp06] === "/v1/responses") {
-            const tmp07 = tmp04 === "ANTHROPIC_API_HOST" ? "/messages" : "/responses";
-            let tmp13 = tmp3.replace(/\/models$/i, "");
-            if (/\/(messages|responses)$/i.test(tmp13)) {
-              tmp13 = tmp13.replace(/\/(messages|responses)$/i, "");
-            }
-            tmp2[tmp06] = "" + (tmp13 || "/v1") + tmp07;
-          }
+        const tmp22 = tmp03 + (tmp04 === "ANTHROPIC_API_HOST" ? "ANTHROPIC_API_PATH" : "OPENAI_API_PATH");
+        if (tmp12.apiPath && (!tmp2[tmp22] || tmp2[tmp22] === "/v1/messages" || tmp2[tmp22] === "/v1/responses")) {
+          tmp2[tmp22] = tmp12.apiPath;
         }
       }
     }
@@ -1325,10 +1316,10 @@ class SidebarProvider {
     if (!["", "low", "medium", "high", "xhigh", "max"].includes(tmp2.OPENAI_REASONING_EFFORT || "")) {
       tmp2.OPENAI_REASONING_EFFORT = "";
     }
-    if (!["", "minimal", "low", "medium", "high", "xhigh", "max"].includes(tmp2.BYOK1_THINKING_EFFORT || "")) {
+    if (!["", "off", "minimal", "low", "medium", "high", "xhigh", "max"].includes(tmp2.BYOK1_THINKING_EFFORT || "")) {
       tmp2.BYOK1_THINKING_EFFORT = "";
     }
-    if (!["", "minimal", "low", "medium", "high", "xhigh", "max"].includes(tmp2.BYOK2_THINKING_EFFORT || "")) {
+    if (!["", "off", "minimal", "low", "medium", "high", "xhigh", "max"].includes(tmp2.BYOK2_THINKING_EFFORT || "")) {
       tmp2.BYOK2_THINKING_EFFORT = "";
     }
     if (!["", "standard", "pro"].includes(String(tmp2.BYOK1_OPENAI_REASONING_MODE || "").toLowerCase())) {
@@ -1778,7 +1769,9 @@ class SidebarProvider {
             break;
           }
           const tmp5 = "BYOK" + tmp03 + "_";
+          const tmp13 = tmp1.baseUrl || tmp1.host || "";
           const tmp6 = {
+            [tmp5 + "BASE_URL"]: tmp13,
             [tmp5 + "ANTHROPIC_API_HOST"]: tmp1.host || "",
             [tmp5 + "ANTHROPIC_API_KEY"]: tmp1.apiKey || "",
             [tmp5 + "OPENAI_API_HOST"]: tmp1.host || "",
@@ -1803,20 +1796,21 @@ class SidebarProvider {
           this.view?.webview.postMessage({
             type: "externalConfigImported",
             slot: tmp03,
+            baseUrl: tmp13,
             host: tmp1.host || "",
             apiKey: tmp1.apiKey || "",
             model: tmp1.model || "",
             thinkingEffort: tmp1.thinkingEffort || "",
             message: tmp3
           });
-          if (tmp1.apiKey && tmp1.host) {
+          if (tmp1.apiKey && tmp13) {
             this.view?.webview.postMessage({
               type: "modelList",
               slot: tmp03,
               loading: true
             });
             try {
-              const tmp11 = await this.fetchModelsFromGateway(tmp1.apiKey, tmp1.host);
+              const tmp11 = await this.fetchModelsFromGateway(tmp1.apiKey, tmp13);
               this.view?.webview.postMessage({
                 type: "modelList",
                 slot: tmp03,
@@ -1949,6 +1943,7 @@ class SidebarProvider {
     const tmp10 = getWebviewNonce();
     const tmp11 = this.view?.webview.cspSource ?? "";
     const tmp12 = this.view.webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, "media", "sidebar.js"));
+    const tmp44a = this.view.webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, "media", "modelPickerCore.js"));
     const tmp13 = "var(--vscode-button-background,#0d9488)";
     const tmp14 = "var(--vscode-button-hoverBackground,#0f766e)";
     const tmp15 = "var(--vscode-textLink-foreground,#5eead4)";
@@ -1961,10 +1956,10 @@ class SidebarProvider {
     const tmp22 = "var(--vscode-foreground,#d4d4d8)";
     const tmp23 = "var(--vscode-input-foreground,var(--vscode-foreground,#e4e4e7))";
     const tmp24 = "'Cascadia Code','Fira Code',monospace";
-    const tmp25 = esc(tmp2.BYOK1_ANTHROPIC_API_HOST || tmp2.ANTHROPIC_API_HOST || "");
+    const tmp25 = esc(tmp2.BYOK1_BASE_URL || tmp2.BASE_URL || tmp2.BYOK1_ANTHROPIC_API_HOST || tmp2.ANTHROPIC_API_HOST || "");
     const tmp26 = esc(tmp2.BYOK1_ANTHROPIC_API_KEY || tmp2.ANTHROPIC_API_KEY || "");
     const tmp27 = esc(tmp2.BYOK1_MODEL || tmp2.DEFAULT_MODEL || "");
-    const tmp28 = esc(tmp2.BYOK2_ANTHROPIC_API_HOST || "");
+    const tmp28 = esc(tmp2.BYOK2_BASE_URL || tmp2.BYOK2_ANTHROPIC_API_HOST || "");
     const tmp29 = esc(tmp2.BYOK2_ANTHROPIC_API_KEY || "");
     const tmp30 = esc(tmp2.BYOK2_MODEL || "");
     const tmp31 = esc(tmp2.BYOK1_THINKING_EFFORT || tmp2.OPENAI_REASONING_EFFORT || "");
@@ -2012,6 +2007,13 @@ body {
 body::before, body::after {
   display: none;
 }
+code {
+  font: inherit;
+  color: inherit;
+  background: none;
+  padding: 0;
+  border-radius: 0;
+}
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
@@ -2050,6 +2052,9 @@ body::before, body::after {
   align-items: center;
   gap: 6px;
   min-height: 22px;
+}
+.card-head:has(+ .hidden) {
+  margin-bottom: 0 !important;
 }
 
 .stats {
@@ -2191,6 +2196,304 @@ input:focus, select:focus {
   outline: none;
   border-color: var(--vscode-focusBorder, ${tmp13});
   box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+}
+select {
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, ${tmp16} 50%),
+    linear-gradient(135deg, ${tmp16} 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) 12px,
+    calc(100% - 9px) 12px;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 28px;
+}
+select.model-source-select {
+  display: none;
+}
+select.choice-source-select {
+  display: none;
+}
+.model-picker {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+.model-picker-trigger {
+  width: 100%;
+  min-height: 34px;
+  padding: 5px 9px;
+  border: 1px solid var(--vscode-input-border, ${tmp21});
+  border-radius: 6px;
+  background: ${tmp20};
+  color: ${tmp23};
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  font-family: ${tmp24};
+  text-align: left;
+  transition: border-color 0.18s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.18s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.model-picker-trigger:hover {
+  border-color: color-mix(in srgb, ${tmp13} 42%, ${tmp21});
+  background: color-mix(in srgb, ${tmp20} 88%, white);
+}
+.model-picker.open .model-picker-trigger {
+  border-color: var(--vscode-focusBorder, ${tmp13});
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+}
+.model-picker-main {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.model-picker-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: ${tmp23};
+}
+.model-picker-placeholder {
+  color: ${tmp16};
+}
+.model-picker-provider {
+  flex: none;
+  display: none;
+  padding: 1px 5px;
+  border-radius: 999px;
+  border: 1px solid ${tmp21};
+  color: ${tmp15};
+  font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif);
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+.model-picker-provider.visible {
+  display: inline-flex;
+}
+.model-picker-chevron {
+  color: ${tmp16};
+  font-size: 14px;
+  line-height: 1;
+  transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.model-picker.open .model-picker-chevron {
+  transform: rotate(180deg);
+}
+.model-picker-panel {
+  position: absolute;
+  z-index: 30;
+  left: 0;
+  right: 0;
+  top: calc(100% + 6px);
+  overflow: hidden;
+  border: 1px solid var(--vscode-focusBorder, ${tmp13});
+  border-radius: 6px;
+  background: ${tmp19};
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+}
+.model-picker-search-wrap {
+  position: relative;
+  border-bottom: 1px solid ${tmp21};
+  background: ${tmp20};
+}
+.model-picker-search-wrap::before {
+  content: '';
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  border: 2px solid ${tmp16};
+  border-radius: 999px;
+  transform: translateY(-55%);
+  opacity: 0.85;
+}
+.model-picker-search-wrap::after {
+  content: '';
+  position: absolute;
+  left: 21px;
+  top: 19px;
+  width: 7px;
+  height: 2px;
+  background: ${tmp16};
+  transform: rotate(45deg);
+  opacity: 0.85;
+}
+.model-picker-search {
+  height: 34px !important;
+  padding: 5px 30px 5px 34px !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-family: ${tmp24};
+}
+.model-picker-clear {
+  position: absolute;
+  right: 6px;
+  top: 5px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: ${tmp16};
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 20px;
+}
+.model-picker-clear:hover {
+  color: ${tmp23};
+  background: rgba(255, 255, 255, 0.06);
+}
+.model-picker-list {
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 5px;
+}
+.model-picker-option, .model-picker-empty {
+  width: 100%;
+  min-height: 30px;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: ${tmp23};
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  text-align: left;
+  font-size: 11px;
+  font-family: ${tmp24};
+}
+.model-picker-option {
+  cursor: pointer;
+}
+.model-picker-option:hover, .model-picker-option.active {
+  background: color-mix(in srgb, ${tmp13} 24%, ${tmp20});
+}
+.model-picker-option.custom {
+  background: color-mix(in srgb, ${tmp13} 34%, ${tmp20});
+  color: var(--vscode-button-foreground, #fff);
+  margin-bottom: 4px;
+}
+.model-picker-option-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.model-picker-option-provider {
+  color: ${tmp16};
+  font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif);
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.model-picker-empty {
+  color: ${tmp16};
+  font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif);
+  line-height: 1.45;
+}
+.choice-picker {
+  position: relative;
+  width: 100%;
+}
+.choice-picker-trigger {
+  width: 100%;
+  min-height: 34px;
+  padding: 5px 9px;
+  border: 1px solid var(--vscode-input-border, ${tmp21});
+  border-radius: 6px;
+  background: ${tmp20};
+  color: ${tmp23};
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  font-family: ${tmp24};
+  text-align: left;
+  transition: border-color 0.18s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.18s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.choice-picker-trigger:hover {
+  border-color: color-mix(in srgb, ${tmp13} 42%, ${tmp21});
+  background: color-mix(in srgb, ${tmp20} 88%, white);
+}
+.choice-picker.open .choice-picker-trigger {
+  border-color: var(--vscode-focusBorder, ${tmp13});
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+}
+.choice-picker-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: ${tmp23};
+}
+.choice-picker-chevron {
+  color: ${tmp16};
+  font-size: 14px;
+  line-height: 1;
+  transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.choice-picker.open .choice-picker-chevron {
+  transform: rotate(180deg);
+}
+.choice-picker-panel {
+  position: absolute;
+  z-index: 28;
+  left: 0;
+  right: 0;
+  top: calc(100% + 6px);
+  overflow: hidden;
+  border: 1px solid var(--vscode-focusBorder, ${tmp13});
+  border-radius: 6px;
+  background: ${tmp19};
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+  padding: 5px;
+}
+.choice-picker-option {
+  width: 100%;
+  min-height: 30px;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: ${tmp23};
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  text-align: left;
+  font-size: 11px;
+  font-family: ${tmp24};
+}
+.choice-picker-option:hover, .choice-picker-option.active {
+  background: color-mix(in srgb, ${tmp13} 24%, ${tmp20});
+}
+.choice-picker-check {
+  width: 12px;
+  color: ${tmp15};
+  font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif);
+  font-weight: 900;
+}
+.choice-picker-option-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .login-grid {
   display: grid;
@@ -2936,12 +3239,12 @@ input:focus, select:focus {
                 <button type="button" class="btn btn-s sm" data-ws-action="importExternalConfig" data-ws-source="codex" data-ws-slot="1">导入 GPT 配置</button>
             </div>
             <div class="row" style="gap:6px;margin-bottom:6px">
-                <select id="cfgByok1Model" style="flex:1;font-size:12px;padding:5px 8px">${tmp27 ? `<option value="${tmp27}" selected>${tmp27}</option>` : "<option value=\"\" disabled selected>请先加载模型</option>"}</select>
+                <select id="cfgByok1Model" class="model-source-select">${tmp27 ? `<option value="${tmp27}" selected>${tmp27}</option>` : "<option value=\"\" disabled selected>请先加载模型</option>"}</select>
                 <button type="button" class="btn btn-s sm" data-ws-action="fetchModels" data-ws-slot="1" style="padding:4px 8px">加载模型</button>
             </div>
-            <div class="fg" id="cfgByok1ThinkingEffortRow"><label id="cfgByok1ThinkingLabel">${esc(thinkingEffort_1.getThinkingIntensityHint(thinkingEffort_1.detectModelProvider(tmp27)))}</label><select id="cfgByok1ThinkingEffort">${buildThinkingEffortOptions(tmp27, tmp31)}</select></div>
-            <div class="fg hidden" id="cfgByok1ReasoningModeRow"><label>GPT-5.6 Reasoning Mode</label><select id="cfgByok1ReasoningMode">${buildOpenAIReasoningModeOptions(tmp44)}</select></div>
-            <div class="fg" id="cfgByok1ServiceTierRow"><label>GPT Processing Tier</label><select id="cfgByok1ServiceTier">${buildOpenAIServiceTierOptions(tmp40)}</select></div>
+            <div class="fg" id="cfgByok1ThinkingEffortRow"><label id="cfgByok1ThinkingLabel">${esc(thinkingEffort_1.getThinkingIntensityHint(thinkingEffort_1.detectModelProvider(tmp27)))}</label><select id="cfgByok1ThinkingEffort" class="choice-source-select">${buildThinkingEffortOptions(tmp27, tmp31)}</select></div>
+            <div class="fg hidden" id="cfgByok1ReasoningModeRow"><label>GPT-5.6 Reasoning Mode</label><select id="cfgByok1ReasoningMode" class="choice-source-select">${buildOpenAIReasoningModeOptions(tmp44)}</select></div>
+            <div class="fg" id="cfgByok1ServiceTierRow"><label>GPT Processing Tier</label><select id="cfgByok1ServiceTier" class="choice-source-select">${buildOpenAIServiceTierOptions(tmp40)}</select></div>
             <div id="modelFetchStatus1" style="font-size:10px;color:${tmp17}"></div>
         </div>
         <div class="guide-block byok2-stripe" style="margin-bottom:10px">
@@ -2953,12 +3256,12 @@ input:focus, select:focus {
                 <button type="button" class="btn btn-s sm" data-ws-action="importExternalConfig" data-ws-source="codex" data-ws-slot="2">导入 GPT 配置</button>
             </div>
             <div class="row" style="gap:6px;margin-bottom:6px">
-                <select id="cfgByok2Model" style="flex:1;font-size:12px;padding:5px 8px">${tmp30 ? `<option value="${tmp30}" selected>${tmp30}</option>` : "<option value=\"\" disabled selected>请先加载模型</option>"}</select>
+                <select id="cfgByok2Model" class="model-source-select">${tmp30 ? `<option value="${tmp30}" selected>${tmp30}</option>` : "<option value=\"\" disabled selected>请先加载模型</option>"}</select>
                 <button type="button" class="btn btn-s sm" data-ws-action="fetchModels" data-ws-slot="2" style="padding:4px 8px">加载模型</button>
             </div>
-            <div class="fg" id="cfgByok2ThinkingEffortRow"><label id="cfgByok2ThinkingLabel">${esc(thinkingEffort_1.getThinkingIntensityHint(thinkingEffort_1.detectModelProvider(tmp30)))}</label><select id="cfgByok2ThinkingEffort">${buildThinkingEffortOptions(tmp30, tmp32)}</select></div>
-            <div class="fg hidden" id="cfgByok2ReasoningModeRow"><label>GPT-5.6 Reasoning Mode</label><select id="cfgByok2ReasoningMode">${buildOpenAIReasoningModeOptions(tmp45)}</select></div>
-            <div class="fg" id="cfgByok2ServiceTierRow"><label>GPT Processing Tier</label><select id="cfgByok2ServiceTier">${buildOpenAIServiceTierOptions(tmp41)}</select></div>
+            <div class="fg" id="cfgByok2ThinkingEffortRow"><label id="cfgByok2ThinkingLabel">${esc(thinkingEffort_1.getThinkingIntensityHint(thinkingEffort_1.detectModelProvider(tmp30)))}</label><select id="cfgByok2ThinkingEffort" class="choice-source-select">${buildThinkingEffortOptions(tmp30, tmp32)}</select></div>
+            <div class="fg hidden" id="cfgByok2ReasoningModeRow"><label>GPT-5.6 Reasoning Mode</label><select id="cfgByok2ReasoningMode" class="choice-source-select">${buildOpenAIReasoningModeOptions(tmp45)}</select></div>
+            <div class="fg" id="cfgByok2ServiceTierRow"><label>GPT Processing Tier</label><select id="cfgByok2ServiceTier" class="choice-source-select">${buildOpenAIServiceTierOptions(tmp41)}</select></div>
             <div id="modelFetchStatus2" style="font-size:10px;color:${tmp17}"></div>
         </div>
         <div class="guide-block" style="margin-bottom:10px">
@@ -3056,6 +3359,7 @@ input:focus, select:focus {
     </div>
 </div>
 
+<script nonce="${tmp10}" src="${tmp44a}"></script>
 <script nonce="${tmp10}" src="${tmp12}"></script>
 </body>
 </html>`;
@@ -3086,6 +3390,9 @@ function shouldUseHttpGateway(arg0) {
 }
 function ensureGatewayUrl(arg0) {
   return gatewayUrl_1.ensureGatewayUrl(arg0);
+}
+function parseProviderBaseUrl(arg0, arg1) {
+  return gatewayUrl_1.parseProviderBaseUrl(arg0, arg1);
 }
 function formatUptime(arg0) {
   return sidebarHtml_1.formatUptime(arg0);

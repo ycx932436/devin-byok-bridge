@@ -33,8 +33,47 @@ function ensureGatewayUrl(arg0) {
   return tmp2 + stripProtoServer(tmp1);
 }
 
+function parseProviderBaseUrl(arg0, arg1) {
+  const tmp1 = String(arg0 || "").trim();
+  if (!tmp1) {
+    return {
+      input: "",
+      host: "",
+      apiPath: ""
+    };
+  }
+  const tmp2 = /^https?:\/\//i.test(tmp1) ? tmp1 : "https://" + tmp1;
+  let tmp3;
+  try {
+    tmp3 = new URL(tmp2);
+  } catch {
+    return {
+      input: tmp1,
+      host: stripProtoServer(tmp1),
+      apiPath: ""
+    };
+  }
+  const tmp4 = String(arg1 || "").trim() || "/messages";
+  const tmp5 = tmp4.startsWith("/") ? tmp4 : "/" + tmp4;
+  const tmp6 = tmp3.pathname.replace(/\/+$/, "");
+  let tmp7 = "";
+  if (tmp6 && tmp6 !== "/") {
+    tmp7 = tmp6.replace(/\/models$/i, "");
+    if (/\/(messages|responses)$/i.test(tmp7)) {
+      tmp7 = tmp7.replace(/\/(messages|responses)$/i, "");
+    }
+    tmp7 = (tmp7 || "/v1") + tmp5;
+  }
+  return {
+    input: tmp1,
+    host: tmp3.host,
+    apiPath: tmp7
+  };
+}
+
 module.exports = {
   stripProtoServer,
   shouldUseHttpGateway,
-  ensureGatewayUrl
+  ensureGatewayUrl,
+  parseProviderBaseUrl
 };

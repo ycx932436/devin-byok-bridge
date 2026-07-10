@@ -144,7 +144,8 @@ function readClaudeUserConfig(homeDir = os.homedir()) {
     };
   }
   const env = settings.env && typeof settings.env === 'object' ? settings.env : {};
-  const host = stripProto(env.ANTHROPIC_BASE_URL || '');
+  const baseUrl = String(env.ANTHROPIC_BASE_URL || '').trim();
+  const host = stripProto(baseUrl);
   const apiKey = firstNonEmpty(env.ANTHROPIC_AUTH_TOKEN, env.ANTHROPIC_API_KEY, env.OPENROUTER_API_KEY);
   const model = firstNonEmpty(env.ANTHROPIC_DEFAULT_OPUS_MODEL, env.ANTHROPIC_DEFAULT_SONNET_MODEL, env.ANTHROPIC_MODEL, env.ANTHROPIC_DEFAULT_HAIKU_MODEL);
   if (!apiKey && !host) {
@@ -159,6 +160,7 @@ function readClaudeUserConfig(homeDir = os.homedir()) {
     source: 'claude',
     label: 'Claude 用户配置',
     filePath,
+    baseUrl,
     host,
     apiKey,
     model,
@@ -180,7 +182,8 @@ function readCodexUserConfig(homeDir = os.homedir()) {
   }
   const parsed = parseCodexConfigToml(configText);
   const apiKey = firstNonEmpty(auth && auth.OPENAI_API_KEY, parsed.bearerToken);
-  const host = stripProto(parsed.baseUrl || '');
+  const baseUrl = String(parsed.baseUrl || '').trim();
+  const host = stripProto(baseUrl);
   const model = parsed.model || '';
   const thinkingEffort = parsed.reasoningEffort || '';
   if (!apiKey) {
@@ -202,6 +205,7 @@ function readCodexUserConfig(homeDir = os.homedir()) {
     source: 'codex',
     label: 'Codex/GPT 用户配置',
     filePath: configPath,
+    baseUrl,
     host,
     apiKey,
     model,

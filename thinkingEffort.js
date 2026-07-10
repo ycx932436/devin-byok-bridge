@@ -1,11 +1,12 @@
 'use strict';
 
-const THINKING_EFFORT_VALUES = ['', 'low', 'medium', 'high', 'xhigh', 'max'];
+const THINKING_EFFORT_VALUES = ['', 'off', 'low', 'medium', 'high', 'xhigh', 'max'];
 const GEMINI_THINKING_LEVELS = ['', 'minimal', 'low', 'medium', 'high'];
 
 const PROVIDER_OPTIONS = {
   claude: [
-    ['', '关闭 · 不启用思考'],
+    ['', '默认 · 按模型/槽位决定'],
+    ['off', '关闭 · 不启用思考'],
     ['low', '低 · budget 5k / adaptive'],
     ['medium', '中 · 推荐平衡'],
     ['high', '高 · 复杂分析/代码'],
@@ -13,7 +14,8 @@ const PROVIDER_OPTIONS = {
     ['max', 'Max · Claude 最深思考']
   ],
   gpt: [
-    ['', '关闭 · 不启用 reasoning'],
+    ['', '默认 · 不覆盖 reasoning'],
+    ['off', '关闭 · 不启用 reasoning'],
     ['low', '低 · reasoning.effort=low'],
     ['medium', '中 · reasoning.effort=medium'],
     ['high', '高 · reasoning.effort=high'],
@@ -28,7 +30,8 @@ const PROVIDER_OPTIONS = {
     ['max', 'Max · GPT-5.6 最深推理']
   ],
   gemini: [
-    ['', '默认 · medium（API 默认，不覆盖）'],
+    ['', '默认 · 按模型/槽位决定'],
+    ['off', '关闭 · 不启用 thinking'],
     ['minimal', 'Minimal · 最低思考 / 最低延迟'],
     ['low', 'Low · 速度优先'],
     ['medium', 'Medium · 推荐平衡'],

@@ -3,18 +3,18 @@
   "displayName": "Devin BYOK Bridge",
   "description": "Devin Desktop BYOK 桥接 — 本地 API Key，多模型路由（兼容旧版 Windsurf）",
   "version": "2.6.1",
-  "publisher": "ycx932436",
+  "publisher": "gogoing1024",
   "license": "MIT",
   "scripts": {
     "test": "node --test \"test/*.mjs\""
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/ycx932436/devin-byok-bridge.git"
+    "url": "https://github.com/gogoing1024/devin-byok-bridge.git"
   },
-  "homepage": "https://github.com/ycx932436/devin-byok-bridge",
+  "homepage": "https://github.com/gogoing1024/devin-byok-bridge",
   "bugs": {
-    "url": "https://github.com/ycx932436/devin-byok-bridge/issues"
+    "url": "https://github.com/gogoing1024/devin-byok-bridge/issues"
   },
   "engines": {
     "vscode": "^1.85.0"
